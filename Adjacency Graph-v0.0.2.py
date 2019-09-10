@@ -140,7 +140,7 @@ class Graph:
         # Secondary_map dict storing incident edges with vertices as keys, secondary_map as values
         self._incident={} if directed else self._outgoing
         self.title=title
-        self.recipe=[]
+        self.recipe=set()
 
     def is_derected(self):
         """Return True if this is a directed graph; False if undirected."""
@@ -203,7 +203,7 @@ class Graph:
     def insert_vertex(self,v):
         """ Insert and return a vertex with element x"""
         if v._category=='Recipe':
-            self.recipe.append(v)
+            self.recipe.add(v)
         self._incident[v]={}
         if self.is_derected()==True:
             self._outgoing[v]={}
@@ -322,7 +322,7 @@ class Graph:
         return search_path_list
 
     def DFS(self,u,visited_dict,path):
-        """ Perform DFS of the unvisited portion of graph g starting at vertex u."""
+        """ Implement DFS of the unvisited portion of graph g starting at vertex u."""
         #print(u)
         for v in self._incident[u].keys():
             if v not in visited_dict:
@@ -391,6 +391,10 @@ class Graph:
         if recipe is self:
             return
         self.__add_functional_unit(recipe)
+        self.recipe.clear()
+        for v in self.vertices():
+            if len(self._outgoing[v])==0:
+                self.recipe.add(v)
 
     def search_in_vertices(self,v,vertices):
         found_vertex=None
@@ -511,8 +515,6 @@ class Graph:
         return string
 
 
-
-
 knife=Vertex(x=1,name='Knife',state=['Clean'],contents=None,category='Utensil')
 blender=Vertex(x=2,name='Blender',state=['Clean'],contents=None,category='Utensil')
 apple=Vertex(x=3,name='Apple',state=['Unchopped'],contents=None,category='Fruit')
@@ -592,22 +594,27 @@ g1.insert_incident_edge(chopped_apple,pick_and_place)
 g1.insert_incident_edge(salad_sauce,pick_and_place)
 g1.insert_incident_edge(bowl,pick_and_place)
 g1.insert_incident_edge(pick_and_place,salad)
+g1.insert_incident_edge(hand,pick_and_place)
+g1.recipe.add(salad)
 
 g2.insert_incident_edge(hand,squeeze)
 g2.insert_incident_edge(salad_sauce_container,squeeze)
 g2.insert_incident_edge(squeeze,salad_sauce)
+g2.recipe.add(salad_sauce)
 
-g2.add_recipe(g1)
+g1.display_processes()
+g2.display_processes()
+#g2.add_recipe(g1)
 g1.add_recipe(g2)
-
-f=Vertex()
-for it in g1.vertices():
-    if it._name=='Salad':
-        f=it
-        break
 #
-g1.display_processes(f)
-print(g1)
+# f=Vertex()
+# for it in g1.vertices():
+#     if it._name=='Salad':
+#         f=it
+#         break
+#
+g1.display_processes()
+# print(g1)
 
 
 
