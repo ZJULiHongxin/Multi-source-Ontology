@@ -9,17 +9,6 @@ Ontology based on adjacency graph
 
 """
 import copy
-import cv2
-import keras
-from keras.preprocessing import image
-import numpy as np
-from keras import backend as K
-import keras.applications
-from keras.applications import resnet50
-K.clear_session()
-
-
-model=keras.applications.resnet50.ResNet50(include_top=True, weights='imagenet', input_tensor=None, input_shape=None, pooling=None, classes=1000)
 
 
 class Vertex:
@@ -625,39 +614,9 @@ g1.add_recipe(g2)
 #         f=it
 #         break
 #
-#g1.display_processes()
+g1.display_processes()
 # print(g1)
 #print(salad)
-G=Graph("Apple")
-count=0
-while(1):
-    option=input("请输入所要执行的操作的编号\n0:建立新知识图谱 1:输入图像信息 2:输入视频信息 3:输入语音信息")
-
-    if option==1:
-        capture = cv2.VideoCapture(0)
-        ret, frame = capture.read()
-        img_path = 'E:\\Research\\'+str(count)+'.jpg'
-        cv2.imwrite(frame,img_path)
-        imshow(frame)
-        img = image.load_img(img_path, target_size=(224, 224))
-        x = image.img_to_array(img)
-        x = np.expand_dims(x, axis=0)
-        x = resnet50.preprocess_input(x)
-
-        preds = model.predict(x)
-        result = resnet50.decode_predictions(preds, top=1)[0][0][1]
-
-        v=Vertex(1,'Apple','Unchopped',None,'Fruit',img_path)
-        print(v)
-        G.insert_vertex(v)
-
-
-
-
-
-
-
-
 
 
 
