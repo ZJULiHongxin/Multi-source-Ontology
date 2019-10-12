@@ -603,8 +603,8 @@ g2.insert_incident_edge(salad_sauce_container,squeeze)
 g2.insert_incident_edge(squeeze,salad_sauce)
 g2.recipe.add(salad_sauce)
 
-#g1.display_processes()
-#g2.display_processes()
+g1.display_processes()
+g2.display_processes()
 #g2.add_recipe(g1)
 g1.add_recipe(g2)
 #
@@ -615,7 +615,7 @@ g1.add_recipe(g2)
 #         break
 #
 g1.display_processes()
-# print(g1)
+print(g1)
 #print(salad)
 
 
