@@ -12,19 +12,19 @@ import copy
 
 import cv2  # Open webcam to capture images and store them.
 
-import keras
-from keras.preprocessing import image
-import numpy as np
-from keras import backend as K
-import keras.applications
-from keras.applications import resnet50
+# import keras
+# from keras.preprocessing import image
+# import numpy as np
+# from keras import backend as K
+# import keras.applications
+# from keras.applications import resnet50
 
 import pickle  # Store and retrieve knowledge base in the form of file.
 
-K.clear_session()
+# K.clear_session()
 
-model = keras.applications.resnet50.ResNet50(include_top=True, weights='imagenet', input_tensor=None, input_shape=None,
-                                             pooling=None, classes=1000)
+# model = keras.applications.resnet50.ResNet50(include_top=True, weights='imagenet', input_tensor=None, input_shape=None,
+#                                              pooling=None, classes=1000)
 
 
 class Vertex:
@@ -371,22 +371,22 @@ class Graph:
         """
         if v is None:
             for recipe_vertex in self.recipe:
-                print('------------- {} --------------'.format(recipe_vertex._name))
+                print('\033[22;34;0m ------------- {} -------------- \033[0m'.format(recipe_vertex._name))
                 self.__BFS_find_gradients(recipe_vertex)
         else:
-            print('------------- {} --------------'.format(v._name))
+            print('\033[22;34;0m ------------- {} -------------- \033[0m'.format(v._name))
             self.__BFS_find_gradients(v)
 
     def __BFS_find_gradients(self, v):
         level = {v}
-        while len(level) > 0:
+        while len(level) > 0:  # If not reaching the lowest level, continue to BFS
             next_level = set()
             for u in level:
                 output_name = u._name
-                for motion_vertex in self._incident[u].keys():
+                for motion_vertex in self._incident[u].keys():  # find its parent nodes, which are action verteices
                     string = ''
                     utensil_name = ''
-                    for input_vertex in self._incident[motion_vertex].keys():
+                    for input_vertex in self._incident[motion_vertex].keys():  # find the parent nodes of discovered action vertices, which are object vertices
                         if input_vertex._category == 'Utensil':
                             utensil_name = input_vertex._name
                         else:
@@ -529,7 +529,7 @@ class Graph:
 
         return string
 
-def merge_graph(self, r1, r2):
+def merge_graph(r1, r2):
     """Merge two subgraphs to create a mixed graph"""
     Merge = Graph(directed=r1.is_directed())
     Merge.add_recipe(r1)
@@ -618,28 +618,28 @@ save_file = 'E:\\Research\\graph.txt'
 save_KB(g3, save_file)
 g4 = load_KB(save_file)
 
-g4.display_processes()
+# g4.display_processes()
 print(g4)
 
 G = Graph("Apple")
 count = 0
-while (1):
-    option = input("请输入所要执行的操作的编号\n0:建立新知识图谱 1:输入图像信息 2:输入视频信息 3:输入语音信息")
-
-    if option == '1':
-        capture = cv2.VideoCapture(1)
-        ret, frame = capture.read()
-        img_path = 'E:\\Research\\' + str(count) + '.jpg'
-        cv2.imwrite(img_path, frame)
-        cv2.imshow('img', frame)
-        img = image.load_img(img_path, target_size=(224, 224))
-        x = image.img_to_array(img)
-        x = np.expand_dims(x, axis=0)
-        x = resnet50.preprocess_input(x)
-
-        preds = model.predict(x)
-        result = resnet50.decode_predictions(preds, top=1)[0][0][1]
-
-        v = Vertex(1, result, ['Unchopped'], None, 'Fruit', img_path)
-        print(v)
-        G.insert_vertex(v)
+# while (1):
+#     option = input("请输入所要执行的操作的编号\n0:建立新知识图谱 1:输入图像信息 2:输入视频信息 3:输入语音信息")
+#
+#     if option == '1':
+#         capture = cv2.VideoCapture(1)
+#         ret, frame = capture.read()
+#         img_path = 'E:\\Research\\' + str(count) + '.jpg'
+#         cv2.imwrite(img_path, frame)
+#         cv2.imshow('img', frame)
+#         img = image.load_img(img_path, target_size=(224, 224))
+#         x = image.img_to_array(img)
+#         x = np.expand_dims(x, axis=0)
+#         x = resnet50.preprocess_input(x)
+#
+#         preds = model.predict(x)
+#         result = resnet50.decode_predictions(preds, top=1)[0][0][1]
+#
+#         v = Vertex(1, result, ['Unchopped'], None, 'Fruit', img_path)
+#         print(v)
+#         G.insert_vertex(v)

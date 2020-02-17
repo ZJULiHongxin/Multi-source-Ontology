@@ -34,10 +34,13 @@ class Vertex:
         string = '+ ' + '- ' * 20 + '+' + '\n'
         string += '|' + 15 * ' ' + 'Object Node' + 15 * ' ' + '|' + '\n'
         string += '| ' + 'Object name: ' + self._name + (27 - len(self._name)) * ' ' + '|' + '\n'
-        string += '| ' + 'Object category: ' + self._category + (23 - len(self._category)) * ' ' + '|' + '\n'
+        if self._category is not None:
+            string += '| ' + 'Object category: ' + self._category + (23 - len(self._category)) * ' ' + '|' + '\n'
+        else:
+            string += '| ' + 'Object category: ' + 'None'+ 19 * ' ' + '|' + '\n'
 
         substring1 = ''
-        if self._state != None:
+        if self._state != None and len(self._state) !=0:
             string += '| ' + 'Object current state: ' + self._state[-1] + (18 - len(self._state[-1])) * ' ' + '|' + '\n'
             if len(self._state) >= 1:
                 for i in range(len(self._state) - 1):
@@ -86,7 +89,7 @@ class Edge:
             self._motions = copy.deepcopy(motions_pairs)
 
     def add_motions(self, pairs):
-        """ add a new motions to this edge"""
+        """ add new motions to this edge"""
         self._motions += pairs
 
     def display_motions(self):
@@ -355,6 +358,7 @@ class Graph:
         for u in self.vertices():
             if v._name==u._name:
                 return u._category
+        return None
 
     def __BFS_find_gradients(self, v):
         level = {v}
@@ -381,8 +385,8 @@ class Graph:
         param: process_list is a list storing new process. 
         Each process is a small graph which consists of only one outcome , one motion, one input and one utensil
         """
-        for process in process_list:
-            self.__add_functional_unit(process)
+        for pro in process_list:
+            self.__add_functional_unit(pro)
 
     def add_recipe(self, recipe):
         """ merge a new recipe(Graph) to this graph.
@@ -486,8 +490,8 @@ class Graph:
                     # substring = '| ' + gap * ' ' + seq_string + gap * ' ' + ' |\n'
                     # list_string += substring
                     if start_p._category != 'Motion' and end_p._category != 'Motion':
-                        seq_string = '{}({}) >>>>>> {}({})'.format(start_p._name, start_p._state[-1],
-
+                        if len(start_p._state) !=0:
+                            seq_string = '{}({}) >>>>>> {}({})'.format(start_p._name, start_p._state[-1],
                                                                    end_p._name, end_p._state[-1])
 
                     elif start_p._category == 'Motion' and end_p._category != 'Motion':
