@@ -47,6 +47,7 @@ video_name = ' '
 record_start_flag = False
 record_stop_flag = False
 record_flag = False
+
 def test():
     global hd
     # while True:
@@ -70,8 +71,13 @@ def testThreading():
         if process_finish==1:
             process=KB.Graph(directed=True)
             process_finish=0
-
-        order = (input('\033[1;33;0m Waiting for orders... \033[0m')).lower()
+        print("\033[1;33;0m Describe a process:  \n \
+         - say 'this object is apple' to create a object vertex in the graph \n \
+         - say 'this tool is knife' to create a tool vertex in the graph \n \
+         - say 'we use knife to cut apple, and get apple slices' to record the action implemented later on \n  \
+         - say 'quit' to save current work and abort the program \n \
+         \033[0m")
+        order = (input('Waiting for order...')).lower()
         # Learn a new vertex of knowledge
         match = re.match('this object is', order)
         if match is not None:
@@ -227,11 +233,13 @@ def testThreading():
 def initSession():
     """ Activate and Initialize a interaction session with ontology knowledge base. """
     global hd, out
+
+    print('\033[1;33;0m Initialize hand detector. Please cover the squares with your hands... \033[0m')
     hd = Recognizer.handDetector(0)
     hd.initDetector()
 
     while True:
-        order = (input('\033[1;33;0m Please select a scenario... \033[0m')).lower()
+        order = (input("waiting for order...")).lower()
         global g
         # New knowledge base
         match = re.match('new', order)
