@@ -19,7 +19,6 @@ import os
 import cv2
 import shutil
 import Brain as KB # KB framework
-import InteractiveSession as sess
 import Recognizer
 import Vision
 from SpeechRecognition import *
@@ -59,8 +58,6 @@ class KnowledgeGraph:
         self.hd.initDetector()
         self.cur_frame=[]
         self.handPosition=0
-
-        self.IR=Vision.ImageRecognizer('./')
 
 
         # mode = (input("Use voice?(Y/N)")).upper()
@@ -128,9 +125,11 @@ class KnowledgeGraph:
                 except FileNotFoundError:
                     print("Knowledge base file",filep, "not found. Please choose your KB again...")
 
-            if self.g != None:
+            if self.g is not None:
                 print("\033[1;34;0m Knowledge base opened successfully... \033[0m")
                 print('\033[1;34;0m <--------------------------', self.g.title, '--------------------------> \033[0m')
+                self.IR = Vision.ImageRecognizer(self.KBpath,self.g.title)
+
                 return
             else:
                 print('\033[0;31m Invalid order, Please say it again ... \033[0m')
@@ -297,6 +296,11 @@ class KnowledgeGraph:
                 cv2.imshow("object image",object_img)
                 cv2.waitKey(1)
                 cv2.imwrite(img_path, object_img)
+
+                print('Extract features from the image. Please wait...')
+                fts=self.IR.extract_features(object_img)
+                self.IR.append_feature(fts,img_path)
+
                 continue
 
             # Learning tool objects
@@ -316,11 +320,17 @@ class KnowledgeGraph:
                 cv2.imshow("object image", tool_img)
                 cv2.waitKey(1)
                 cv2.imwrite(img_path, tool_img)
+
+                print('Extract features from the image. Please wait...')
+                fts = self.IR.extract_features(tool_img)
+                self.IR.append_feature(fts, img_path)
+
                 continue
 
             match = re.match('save', order)
             if match is not None:
                 KB.save_KB(self.g, os.path.join(self.KBpath,self.g.title,self.g.title + '.kb'))
+                self.IR.save_feature_file()
                 continue
 
             match = re.match('display', order)

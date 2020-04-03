@@ -71,7 +71,7 @@ class handDetector:
         self.avgColor=[[0,0,0] for i in range(self.roi_num)]
         self.color_lower=[[] for i in range(self.roi_num)]
         self.color_upper=[[] for i in range(self.roi_num)]
-        for i in range(6):
+        for i in range(60):
             _, self.img.src=self.img.cap.read()
             for j in range(self.roi_num):
                 self.roi[j].drawRect(self.img.src)
@@ -84,7 +84,7 @@ class handDetector:
                 break
 
     def getAverageHandColor(self):
-        sample_num=5
+        sample_num=50
         for i in range(sample_num):
             _, self.img.src=self.img.cap.read()
             # The image is originally BGR, and now will be converted to HSL
