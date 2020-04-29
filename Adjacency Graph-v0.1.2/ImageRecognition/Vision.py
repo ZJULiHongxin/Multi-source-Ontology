@@ -17,12 +17,17 @@ class ImageRecognizer:
         self.data=dict()
         self.vector_size=32
 
+        print('Trying to load feature files:',self.feature_file_path)
         if os.path.exists(self.feature_file_path):
+            print('\033[1;34;0m Feature files opened successfully...\n \033[0m')
             with open(self.feature_file_path,'rb') as fp:
                 self.data = pickle.load(fp)
             for k, v in self.data.items():
                 self.names.append(k)
                 self.matrix.append(v)
+        else:
+            print('\033[0;31m Feature file does not exist!\n If the graph is newly created, please ignore this warning.. \033[0m')
+
 
     def extract_features(self, img):
         if isinstance(img,np.ndarray)==False:
@@ -56,17 +61,16 @@ class ImageRecognizer:
         with open(self.feature_file_path, 'wb') as fp:
             pickle.dump(self.data,fp)
 
-
-    def __cos_cdist(self, vector):
+    def cos_cdist(self, vector):
         # Calculate the dot-product of two descriptor
         v = vector.reshape(1, -1)
         return scipy.spatial.distance.cdist(self.matrix, v, 'cosine').reshape(-1)
 
-    def match(self, test_img_path, top_num=5):
+    def match(self, test_img, top_num=5):
         self.matrix = np.array(self.matrix)
         self.names = np.array(self.names)
 
-        features = self.extract_features(test_img_path)
+        features = self.extract_features(test_img)
         img_distances = self.cos_cdist(features)
         # getting top 5 records
         # 获得前5个记录
@@ -74,4 +78,7 @@ class ImageRecognizer:
 
         nearest_img_paths = self.names[nearest_ids].tolist()
         return nearest_img_paths, img_distances[nearest_ids].tolist()
+
+if __name__=="__main__":
+    pass
 

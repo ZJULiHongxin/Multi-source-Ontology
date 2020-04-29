@@ -13,10 +13,11 @@ import time
 class handDetector:
     __slots__ = 'square_len', 'roi_num', 'avgColor', 'color_lower', 'color_upper',\
                 'textColor', 'numberOfDefects', 'iSinceKFInit', 'roi', 'cvtMode', \
-                'cvtORGMode','img','hand', 'out'
+                'cvtORGMode','img','hand', 'out', 'sample_time'
 
-    def __init__(self, cameraNo):
+    def __init__(self, cameraNo, sample_time=50):
         self.square_len=20
+        self.sample_time=sample_time
         self.roi_num = 0
         self.avgColor=[]
         self.color_lower=[]
@@ -35,6 +36,7 @@ class handDetector:
             fps=20,
             frameSize=(640, 480),
             isColor=1)
+
 
 
 # # Sppech Recording
@@ -71,7 +73,9 @@ class handDetector:
         self.avgColor=[[0,0,0] for i in range(self.roi_num)]
         self.color_lower=[[] for i in range(self.roi_num)]
         self.color_upper=[[] for i in range(self.roi_num)]
-        for i in range(60):
+
+        # sampling hand color
+        for i in range(self.sample_time):
             _, self.img.src=self.img.cap.read()
             for j in range(self.roi_num):
                 self.roi[j].drawRect(self.img.src)
