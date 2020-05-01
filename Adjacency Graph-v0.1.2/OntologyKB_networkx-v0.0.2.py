@@ -177,7 +177,7 @@ class KnowledgeGraph:
                     title = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
                 filep = os.path.join(self.KBpath, title)
-                print('\033[1;33m The path: \033[0m', end='')
+                print('\033[1;33m [Note] The path: \033[0m', end='')
                 print(filep)
                 create_flag = True
 
@@ -190,7 +190,7 @@ class KnowledgeGraph:
                     while True:
                         ans = input()
                         if ans == 'y' or ans == 'yes':
-                            print("\033[0;31m The existing KB has been deleted \033[0m")
+                            print("\033[0;31m [Note] The existing KB has been deleted \033[0m")
                             shutil.rmtree(filep)
                             break
                         elif ans == 'n' or ans == 'no':
@@ -198,7 +198,7 @@ class KnowledgeGraph:
                             create_flag = False
                             break
                         else:
-                            print('\033[1;31m Invalid order! \033[0m')
+                            print('\033[1;31m [Warning] Invalid order! \033[0m')
 
                 if create_flag:
                     # Create a new KB
@@ -211,7 +211,7 @@ class KnowledgeGraph:
                     os.mkdir(filename)
                     filename = os.path.join(self.KBpath, title, title + '.nxkb')
                     self.save_KB(filename)
-                    print("\033[1;34m Knowledge base created successfully...\033[0m")
+                    print("\033[1;34m [Note] Knowledge base created successfully...\033[0m")
 
             # Open an existing knowledge base
             match = re.match('open', order)
@@ -222,16 +222,16 @@ class KnowledgeGraph:
                 try:
                     self.load_KB(filep)
                 except FileNotFoundError:
-                    print("Knowledge base file", filep, "not found. Please choose your KB again...")
+                    print("[Note] Knowledge base file", filep, "not found. Please choose your KB again...")
 
             if self.g is not None:
-                print("\033[1;34;0m Knowledge base opened successfully...\n \033[0m")
+                print("\033[1;34;0m [Note] Knowledge base opened successfully...\n \033[0m")
                 print('\033[1;34;0m <-------------------------- ' + title + ' --------------------------> \033[0m')
                 self.IR = Vision.ImageRecognizer(self.KBpath, title)
 
                 return
             else:
-                print('\033[0;31m Invalid order, Please say it again ... \033[0m')
+                print('\033[0;31m [Warning] Invalid order, Please say it again ... \033[0m')
 
     def interactiveSession(self):
         """Interacting with ontology knowledge base.
@@ -252,7 +252,7 @@ class KnowledgeGraph:
 
                 # Start to record action
                 if self.record_start_flag:
-                    print('Start recording action...\n The video path is ' + self.video_name)
+                    print('[Note] Start recording action...\n [Note] The video path is ' + self.video_name)
                     self.actionVideo = cv2.VideoWriter(
                         filename=self.video_name,
                         fourcc=cv2.VideoWriter_fourcc(*'XVID'),
@@ -264,13 +264,10 @@ class KnowledgeGraph:
 
                 # Stop recording action
                 if self.record_stop_flag:
-                    print('Saving action video, please wait... ')
+                    print('[Note] Saving action video, please wait... ')
                     self.actionVideo.release()
                     self.record_flag = False
                     self.record_stop_flag = False
-
-                    # Draw knowledge graph whenever a process is learned successfully
-                    self.draw_graph_flag = True
 
                 if self.record_flag:
                     self.actionVideo.write(self.hd.img.plainImg)
@@ -291,7 +288,7 @@ class KnowledgeGraph:
             exit()
 
         except Exception as e:
-            print('\033[0;31m An error has occurred. Save KB and quit... \033[0m')
+            print('\033[0;31m [Error] An error has occurred. Save KB and quit... \033[0m')
             print(traceback.format_exc())
 
             self.save_KB(os.path.join(self.KBpath, self.title, self.title + '.nxkb'))
@@ -301,17 +298,15 @@ class KnowledgeGraph:
 
         return
 
-    def add_process(self, previous_objects, objects, tools, motion, results):
+    def add_process(self, objects, tools, motion, results):
         self.g.add_node(motion.name, node_prop=motion, node_type='Motion')
         for obj_node in objects:
             self.g.add_edge(obj_node.name, motion.name)
         for tool_node in tools:
             self.g.add_edge(tool_node.name, motion.name)
         for result_node in results:
-            self.g.add_node(result_node.name, node_prop=result_node, node_type=result_node.category)
             self.g.add_edge(motion.name, result_node.name)
-        for node in previous_objects:
-            self.g.add_edge(motion.name, node.name)
+
 
     def draw_graph(self):
         labels = dict((node[0], '[' + node[1].get('node_prop').state[0] + ']') for node in self.g.nodes(data=True) if
@@ -326,6 +321,56 @@ class KnowledgeGraph:
 
         plt.show()
 
+    def update_object_node(self, node):
+        name=node.name
+        state=node.state
+        contents=node.contents
+        category=node.category
+        img_path=node.img_path[0]
+
+        graph_keys = self.g.graph['node_number_dict'].keys()
+
+        if name in graph_keys:
+            # Search previous nodes to see if this node has been added onto the graph before
+            objnode_list = self.g.graph['node_number_dict'][name]
+            search_idx = len(objnode_list) - 1
+
+            while search_idx >= 0:
+                if objnode_list[search_idx].category == category \
+                        and objnode_list[search_idx].state == state \
+                        and objnode_list[search_idx].contents == contents:
+                    break
+                search_idx -= 1
+
+            # if this node is not a one that has been obtained before,
+            # add this node onto the graph and update the node dictionary of the graph
+            if search_idx < 0:
+                temp_No = len(self.g.graph['node_number_dict'][name])
+                newname = name + str(temp_No)
+                img_path = os.path.join(img_path, newname + '_0.jpg')
+                vertex = Vertex(name=newname, state=state, contents=contents, category=category,
+                                imgpath=[img_path])
+                self.g.add_node(newname, node_prop=vertex, node_type=category)
+                self.g.graph['node_number_dict'][name].append(vertex)
+                print('[Note] There are objects of the same class, so its name is changed to', newname)
+                return vertex, img_path
+            # otherwise this node will be replaced with the identical node which has been obtained before
+            else:
+                img_path = os.path.join(img_path, objnode_list[search_idx].name + '_' + str(len(objnode_list[search_idx].img_path)) + '.jpg')
+                objnode_list[search_idx].img_path.append(img_path)
+                print('[Note] Object node ', '"' + name + '"',
+                      "is already in the Graph, so it will be changed to the previous one")
+                return objnode_list[search_idx], img_path
+        else:
+            # if the class of this object is not on the node dictionary,
+            # then create a new class and add this object onto the graph
+            img_path = os.path.join(img_path, name + '0_0.jpg')
+            vertex = Vertex(name=name + '0', state=state, contents=contents, category=category, imgpath=[img_path])
+            print(vertex)
+            self.g.add_node(name + '0', node_prop=vertex, node_type=category)
+            self.g.graph['node_number_dict'].update({name: [vertex]})
+            return vertex, img_path
+
     def testThreading(self):
 
         process_finish = 0
@@ -333,15 +378,6 @@ class KnowledgeGraph:
         process_objectlist = []
         process_toollist = []
         process_resultlist = []
-
-        # search mechanism: firstly, search process_objectlist; if obj not found, then search previous_resultlist;
-        # if obj not found, then search the whole graph.
-
-        # A list used to store the names of previously learned nodes
-        # This way, the KB can learn a new process based on previously learned nodes
-        # Every time a process is learned, its nodes will be appended to the rear of the list.
-        prev_obj_nodelist = []
-        prev_tool_nodelist = []
 
         # a list used to store those nodes which are not in process_objectlist
         previous_resultlist = []
@@ -360,10 +396,9 @@ class KnowledgeGraph:
                 process_finish = 0
 
             print("""\033[1;33;0m Describe a process: 
-Object    - say 'this object is apple.' to create a object vertex in the graph 
-Tool      - say 'this tool is knife.' to create a tool vertex in the graph 
-Motion    - say 'we use a knife to cut the apple, and get apple_slices.' to record the  
-    action to be implemented
+Object  - say 'this object is apple.' to create a object vertex in the graph 
+Tool    - say 'this tool is knife.' to create a tool vertex in the graph 
+Motion  - say 'we use a knife to cut the apple, and get apple_slices.' to record the action to be implemented
 Other expamples:
 # ex1: we use a knife to cut the apple, and get apple_slices.  [tool][motion][obj], and get [result]
 # ex2: we pick the apple_slices, and put them into a bowl.  [motion1][obj], and [motion] [tool]
@@ -404,7 +439,7 @@ Other expamples:
                     prop = re.match('category', description)
                     if prop is not None:
                         category = description[9:]
-                        print("ok... its category has been updated: " + category + '\n')
+                        print("[Note] ok! its category has been updated: " + category + '\n')
                         continue
 
                     # Say 'contents' to describe the stuff in it
@@ -444,60 +479,20 @@ Other expamples:
 
                             continue
 
-                    print('\033[0;31m Invalid order, Please say it again ... \033[0m')
+                    print('\033[0;31m [Warning] Invalid order, Please say it again ... \033[0m')
 
                 """
                 UPDATE the No. of the OBJECT node
                 """
-                graph_keys = self.g.graph['node_number_dict'].keys()
                 img_path = os.path.join(self.KBpath, self.title, 'Objects')
-
-                if name in graph_keys:
-                    # Search previous nodes to see if this node has been added onto the graph before
-                    objnode_list = self.g.graph['node_number_dict'][name]
-                    search_idx = len(objnode_list) - 1
-
-                    while search_idx >= 0:
-                        if objnode_list[search_idx].category == category \
-                                and objnode_list[search_idx].state == state \
-                                and objnode_list[search_idx].contents == contents:
-                            break
-                        search_idx -= 1
-
-                    # if this node is not a one that has been obtained before,
-                    # add this node onto the graph and update the node dictionary of the graph
-                    if search_idx < 0:
-                        temp_No = len(self.g.graph['node_number_dict'][name])
-                        newname=name +str(temp_No)
-                        img_path = os.path.join(img_path, newname + '_0.jpg')
-                        vertex = Vertex(name=newname, state=state, contents=contents, category=category,
-                                        imgpath=[img_path])
-                        self.g.add_node(newname, node_prop=vertex, node_type=category)
-                        self.g.graph['node_number_dict'][name].append(vertex)
-                        process_objectlist.append(vertex)
-                        print('There are objects of the same class, so its name is changed to', newname)
-                    # otherwise this node will be replaced with the identical node which has been obtained before
-                    else:
-                        img_path = os.path.join(img_path,
-                                                objnode_list[search_idx].name+'_'+str(len(objnode_list[search_idx].img_path))+'.jpg')
-                        objnode_list[search_idx].img_path.append(img_path)
-                        process_objectlist.append(objnode_list[search_idx])
-                        print('Object node ', '"' + name + '"',
-                              "is already in the Graph, so it will be changed to the previous one")
-                else:
-                    # if the class of this object is not on the node dictionary,
-                    # then create a new class and add this object onto the graph
-                    img_path=os.path.join(img_path, name+'0_0.jpg')
-                    vertex = Vertex(name=name+'0', state=state, contents=contents, category=category, imgpath=[img_path])
-                    print(vertex)
-                    self.g.add_node(name+'0', node_prop=vertex, node_type=category)
-                    self.g.graph['node_number_dict'].update({name: [vertex]})
-                    process_objectlist.append(vertex)
-
+                vertex = Vertex(name=name, state=state, contents=contents, category=category,
+                                imgpath=[img_path])
+                vertex, img_path = self.update_object_node(vertex)
+                process_objectlist.append(vertex)
 
                 # Take a photo
                 object_pos = self.handPosition[0]
-                print('The program will take a photo in 2 seconds, please move away your hands...')
+                print('[Note] The program will take a photo in 2 seconds, please move away your hands...')
                 cv2.waitKey(2000)  # Please move your hands away from the object
 
                 object_img = self.hd.img.plainImg[object_pos[1]:object_pos[1] + object_pos[3], \
@@ -507,11 +502,11 @@ Other expamples:
                 cv2.imshow(name, object_img)
                 cv2.waitKey(1)
                 cv2.imwrite(img_path, object_img)
-                print('Image path:', img_path)
-                print('Extract features from the image. Please wait...')
+                print('[Note] Image path:', img_path)
+                print('[Note] Extract features from the image. Please wait...')
                 fts = self.IR.extract_features(object_img)
                 self.IR.append_feature(fts, img_path)
-                print('Features extracted and saved successfully!.\n')
+                print('[Note] Features extracted and saved successfully!.\n')
 
                 continue
 
@@ -521,12 +516,11 @@ Other expamples:
                 tool_name = order[13:-1]
                 img_path = os.path.join(self.title, 'Objects')
 
-                toolnode_list=self.g.graph['tool']
+                toolnode_list=self.g.graph['node_number_dict']['tool']
+                create_flag=False
+
                 if len(toolnode_list)==0:
-                    img_path = os.path.join(img_path, tool_name + '_0.jpg')
-                    tool = Vertex(name=tool_name, category='Tool', state=['clean'], imgpath=[img_path])
-                    self.g.add_node(tool_name, node_prop=tool, node_type=tool.category)
-                    process_toollist.append(tool_name)
+                    create_flag=True
                 else:
                     idx=len(toolnode_list)-1
                     while idx>=0:
@@ -534,11 +528,27 @@ Other expamples:
                             break
                         idx-=1
                     if idx<0:
+                        create_flag=True
+                    else:
+                        num=str(len(toolnode_list[idx].img_path))
+                        img_path = os.path.join(img_path, tool_name + '_'+num+'.jpg')
+                        toolnode_list[idx].img_path.append(img_path)
+                        process_toollist.append(toolnode_list[idx])
+                        print('[Note] This tool is already in the knowledge graph')
+                        print(toolnode_list[idx])
+
+                if create_flag:
+                    img_path = os.path.join(img_path, tool_name + '_0.jpg')
+                    tool = Vertex(name=tool_name, category='Tool', state=['clean'], imgpath=[img_path])
+                    self.g.add_node(tool_name, node_prop=tool, node_type=tool.category)
+                    self.g.graph['node_number_dict']['tool'].append(tool)
+                    process_toollist.append(tool)
+                    print(tool)
 
 
                 # Take a photo
                 tool_pos = self.handPosition[0]
-                print('The program will take a photo in 2 seconds, please move away your hands...')
+                print('[Note] The program will take a photo in 2 seconds, please move away your hands...')
                 cv2.waitKey(2000)  # Please move your hands away from the object
                 tool_img = self.hd.img.plainImg[tool_pos[1]:tool_pos[1] + tool_pos[3], \
                            tool_pos[0]:tool_pos[0] + tool_pos[2], :]
@@ -546,9 +556,10 @@ Other expamples:
                 cv2.destroyAllWindows()
                 cv2.imshow(tool_name, tool_img)
                 cv2.waitKey(1)
+                print('[Note] Image path:',img_path)
                 cv2.imwrite(img_path, tool_img)
 
-                print('Extract features from the image. Please wait...\n')
+                print('[Note] Extract features from the image. Please wait...\n')
                 fts = self.IR.extract_features(tool_img)
                 self.IR.append_feature(fts, img_path)
 
@@ -556,17 +567,10 @@ Other expamples:
 
             match = re.match('save', order)
             if match is not None:
-                # add incomplete process onto graph
-                for n in list(self.g.nodes.data()):
-                    node_name = n[0]
-                    node_type = n[1]['node_type']
-                    node_prop = n[1]['node_prop']
-
-                    pass
 
                 self.save_KB(os.path.join(self.KBpath, self.title, self.title + '.nxkb'))
                 self.IR.save_feature_file()
-                print('The knowledge graph and all features have been saved!\n')
+                print('[Note] The knowledge graph and all features have been saved!\n')
                 continue
 
             match = re.match('display', order)
@@ -579,7 +583,7 @@ Other expamples:
                 self.save_KB(os.path.join(self.KBpath, self.title, self.title + '.nxkb'))
                 self.IR.save_feature_file()
                 self.close_flag = True
-                print('save and quit')
+                print('[Note] save and quit')
 
                 break
 
@@ -627,14 +631,12 @@ Other expamples:
                     # Search mechanism step 2: search in the node dictionary
                     if idx == len(process_objectlist):
                         if obj_name in self.g.graph['node_number_dict'].keys():
-                            previous_resultlist.append(self.g.graph['node_number_dict'][obj_name][-1])
+                            previous_objnode=self.g.graph['node_number_dict'][obj_name][-1]
+                            process_objectlist.append(previous_objnode)
+                            print('[Note] The object being operated "{}" was obtained long ago'.format(previous_objnode.name))
                         else:
-                            print('The result node "{}" cannot be found in the graph. Please describe it first.'.format(
-                                obj_name))
-
+                            print('\033[0;31m[Warning] The result node "{}" cannot be found in the graph. Please describe it first.\n \033[0m'.format(obj_name))
                             continue
-
-                    print('Previous_resultlist:', str([node.name for node in previous_resultlist]))
 
                     """
                     Extract the name of the tool mentioned in the order
@@ -660,11 +662,10 @@ Other expamples:
                     for tool_node in process_toollist:
                         if tool_node.name == tool_name:
                             find_flag = True
-                            self.g.graph['node_number_dict']['tool'].extend(process_toollist)
                             break
 
-                            # If the tool node is not in process_toollist, which means this node may have been obtained before,
-                            # continue to search in prev_obj_nodelist
+                    # If the tool node is not in process_toollist, which means this node may have been obtained before,
+                    # continue to search in prev_obj_nodelist
                     if not find_flag:
                         toolnode_list = self.g.graph['node_number_dict'].get('tool')
                         # If the key'tool' is not in the node dictionary,
@@ -677,8 +678,7 @@ Other expamples:
                             tool_idx -= 1
 
                     if not find_flag:
-                        print('The tool node "' + tool_name + '" cannot be found! Please describe it first.')
-                        previous_resultlist.clear()
+                        print('\033[0;31m[Warning]The tool node "' + tool_name + '" cannot be found! Please describe it first.\n \033[0m')
                         continue
 
                     """
@@ -692,12 +692,12 @@ Other expamples:
                         space_after_motion_idx += 1
 
                     action_name = order[to_idx + 3:space_after_motion_idx]
-                    self.video_name = os.path.join(self.KBpath, self.title, 'Motion', action_name + '.avi')
+                    self.video_name = os.path.join(self.KBpath, self.title, 'Motions', action_name + '.avi')
                     self.record_start_flag = True
 
                     # Start recording a video. Stop when 'finish' is confirmed
                     while True:
-                        command = (input("\033[1;33;0m Say 'finish' to end recording your action...\n \033[0m")).lower()
+                        command = (input("\033[1;33;0m [Note] Say 'finish' to end recording your action...\n \033[0m")).lower()
                         # Speech Recognition
                         match = re.match('finish', command)
                         if match is not None:
@@ -708,7 +708,7 @@ Other expamples:
                     Create a MOTION node
                     """
                     process_motion = Vertex(name=action_name, state=None, contents=None, category='Motion',
-                                            imgpath=self.video_name)
+                                            imgpath=[self.video_name])
                     """
                     Update the No. of the motion node in the node dictionary of the graph
                     """
@@ -733,60 +733,42 @@ Other expamples:
                             break
                         space_before_result_idx -= 1
 
-                    result = Vertex(name=order[space_before_result_idx + 1:-1],
-                                    state=['be_' + process_motion.name])
-                    process_resultlist.append(result)
-
+                    name=order[space_before_result_idx + 1:-1]
+                    img_path = os.path.join(self.KBpath, self.title, 'Objects')
+                    result = Vertex(name=name, state=['be_' + process_motion.name], imgpath=[img_path])
                     """
                     Update the No. of every RESULT node
                     """
-                    for i in range(len(process_resultlist)):
-                        graph_keys = self.g.graph['node_number_dict'].keys()
+                    updated_result, img_path = self.update_object_node(result)
+                    process_resultlist.append(updated_result)
 
-                        obj_node_name = process_resultlist[i].name
-                        if obj_node_name in graph_keys:
-                            node_class_name = obj_node_name  # actually, 'node_class_name' is a reference to obj_node_name!!
+                    # Take a photo
+                    object_pos = self.handPosition[0]
+                    print('[Note] The program will take a photo in 2 seconds, please move away your hands...')
+                    cv2.waitKey(2000)  # Please move your hands away from the object
 
-                            # Search previous nodes to see if this node has been added onto the graph before
-                            objnode_list = self.g.graph['node_number_dict'][node_class_name]
-                            search_idx = len(objnode_list) - 1
+                    object_img = self.hd.img.plainImg[object_pos[1]:object_pos[1] + object_pos[3], \
+                                 object_pos[0]:object_pos[0] + object_pos[2], :]
 
-                            while search_idx >= 0:
-                                if objnode_list[search_idx].category == process_resultlist[i].category \
-                                        and objnode_list[search_idx].state == process_resultlist[i].state \
-                                        and objnode_list[search_idx].contents == process_resultlist[i].contents:
-                                    break
-                                search_idx -= 1
-
-                            # if this node is not a one that has been obtained before,
-                            # add this node onto the graph and update the node dictionary of the graph
-                            if search_idx < 0:
-                                temp_No = len(self.g.graph['node_number_dict'][node_class_name])
-                                process_resultlist[i].name += str(temp_No)
-                                self.g.graph['node_number_dict'][node_class_name].append(process_resultlist[i])
-                                print('Result node', '"' + node_class_name + '"', 'is not in the Graph,',
-                                      'so its number will be', process_resultlist[i].name)
-
-                            # otherwise this node will be replaced with the identical node which has been obtained before
-                            else:
-                                objnode_list[search_idx].img_path.extend(process_resultlist[i].img_path)
-                                process_resultlist[i] = objnode_list[search_idx]
-                                print('Result node', '"' + node_class_name + '"',
-                                      "is already in the Graph, so it will be replaced with",
-                                      process_resultlist[i].name)
-
-                        else:
-                            node_class_name = obj_node_name
-                            process_resultlist[i].name += '0'
-                            self.g.graph['node_number_dict'].update({node_class_name: [process_resultlist[i]]})
-                            print('The class of the Result node', '"' + node_class_name + '"',
-                                  "is not in the node dictionary of the graph, so it will be the first one of its class")
-
+                    cv2.destroyAllWindows()
+                    cv2.imshow(name, object_img)
+                    cv2.waitKey(1)
+                    cv2.imwrite(img_path, object_img)
+                    print('[Note] Image path:', img_path)
+                    print('[Note] Extract features from the image. Please wait...')
+                    fts = self.IR.extract_features(object_img)
+                    self.IR.append_feature(fts, img_path)
+                    print('[Note] Features extracted and saved successfully!.\n')
+ 
                     # Add nodes onto the graph
-                    self.add_process(previous_resultlist, process_objectlist, process_toollist, process_motion,
+                    self.add_process(process_objectlist,
+                                     process_toollist,
+                                     process_motion,
                                      process_resultlist)
 
                     print("\033[1;33;0m Please check the results below..\n \033[0m")
+                    # for i in previous_resultlist:
+                    #     print(i)
                     for i in process_objectlist:
                         print(i)
                     for i in process_toollist:
@@ -795,6 +777,7 @@ Other expamples:
                     for i in process_resultlist:
                         print(i)
 
+                    self.draw_graph_flag=True
                     continue
                 else:
                     if 'and' in order:
@@ -803,7 +786,7 @@ Other expamples:
             match = re.match('what', order)
             if match is not None:
                 obj_pos = self.handPosition[0]
-                print('The program will take a photo in 2 seconds, please move away your hands...\n')
+                print('[Note] The program will take a photo in 2 seconds, please move away your hands...\n')
                 cv2.waitKey(2000)  # Please move your hands away from the object
                 obj_img = self.hd.img.plainImg[obj_pos[1]:obj_pos[1] + obj_pos[3], \
                           obj_pos[0]:obj_pos[0] + obj_pos[2], :]
@@ -811,9 +794,9 @@ Other expamples:
                 cv2.imshow("object image", obj_img)
                 cv2.waitKey(1)
 
-                print('Searching similar images in database. Please wait...')
+                print('[Note] Searching similar images in database. Please wait...')
                 nearest_img_paths, _ = self.IR.match(obj_img, 1)
-                print('\033[1;34;0m Found matched image: \033[0m', end='')
+                print('\033[1;34;0m[Note] Found matched image: \033[0m', end='')
                 print(nearest_img_paths[0])
                 matched_img = cv2.imread(nearest_img_paths[0])
 
@@ -845,4 +828,6 @@ Other expamples:
 testG = KnowledgeGraph(args.kbpath)
 testG.initSession()
 testG.interactiveSession()
+
+
 
