@@ -1,5 +1,5 @@
-#忽略语音模型
-/Adjacency Graph-v0.1.1/SpeechRec/deepspeech-0.6.1-models.rar
-/Adjacency Graph-v0.1.1/SpeechRec/deepspeech-0.6.1-models/*
-/Adjacency Graph-v0.1.2/SpeechRec/deepspeech-0.6.1-models/*
-/Adjacency Graph-v0.1.2/kitchen/*
+# Files available
+!/Adjacency_Graph-v0.1.3_networkx-v2.5/
+!README.md
+!/__pycache__/
+!/demo_images/
