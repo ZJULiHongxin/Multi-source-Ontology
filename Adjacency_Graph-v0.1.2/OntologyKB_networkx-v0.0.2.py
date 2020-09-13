@@ -310,7 +310,6 @@ class KnowledgeGraph:
         for result_node in results:
             self.g.add_edge(motion.name, result_node.name)
 
-
     def draw_graph(self):
         labels = dict((node[0], '[' + node[1].get('node_prop').state[0] + ']') for node in self.g.nodes(data=True) if
                       isinstance(node[0], str))
@@ -817,6 +816,42 @@ Other expamples:
 
             print('\033[0;31m Invalid order...\n \033[0m')
 
+    def DFSTraverse(self, u, is_complete=False):
+        """ Depth-first search from vertex u.
+        Return a dict with visited vertices as keys and their discovering edges as values
+        if the argument is_complete is False, the DF-search will only be implemented once from u, thus some vertices may not be visited;
+        if the is_complete is True, the DF-search will be implemented until every vertices are visited"""
+
+        # visited_dict acts as a mechanism for recognizing visited vertices, with
+        # visited vertices as keys and their discovering edges as values.
+        # Newly visited vertices will be added to the dict
+
+        search_path_list = []
+        visited_dict = {u: None}
+
+        path1 = [u]
+        self.DFS(u, visited_dict, path1)
+        search_path_list.append(path1)
+
+        if is_complete:
+            for vertex in self.vertices():
+                if vertex not in visited_dict:
+                    path = [vertex]
+                    visited_dict[vertex] = None
+                    self.DFS(vertex, visited_dict, path)
+                    search_path_list.append(path)
+
+        return search_path_list
+
+    def DFS(self, u, visited_dict, path):
+        """ Implement DFS of the unvisited portion of graph g starting at vertex u."""
+        # print(u)
+        for v in self._incident[u].keys():
+            if v not in visited_dict:
+                path.append(v)
+                visited_dict[v] = self._incident[u][v]
+                self.DFS(v, visited_dict, path)
+
     def save_KB(self, filename):
         """ Save a knowledge base to a local file """
         with open(filename, 'wb') as f:
@@ -827,10 +862,10 @@ Other expamples:
         with open(filename, 'rb') as f:
             self.g = pickle.load(f)
 
-
-testG = KnowledgeGraph(args.kbpath)
-testG.initSession()
-testG.interactiveSession()
+if __name__== "__main__":
+    testG = KnowledgeGraph(args.kbpath)
+    testG.initSession()
+    testG.interactiveSession()
 
 
 
